@@ -48,6 +48,23 @@ describe("MyTest",function(){
             const {myTest,owner} = await loadFixture(runEveryTime);
             expect(await myTest.owner()).to.equal(owner.address)
         })
+        // checl balance
+        it("Should receive and store the funds to MyTest",async function(){
+            const {myTest,lockAmount} = await loadFixture(runEveryTime);
+            // const contractBal = await ethers.provider.getBalance(myTest.target);
+            //  console.log(contractBal,'contractBalcontractBal');
+            
+             expect(await ethers.provider.getBalance(myTest.target)).to.equal(lockAmount);
+        })
+        //condition check 
+it("Should fail if the unlocked is not in the future",async function(){
+    const latestTime = await time.latest();
+    // console.log(latestTime / 60 / 60 / 60 / 24);
+    const MyTest =await ethers.getContractFactory("MyTest");
+
+    await expect(MyTest.deploy(latestTime,{value:1})).to.be.revertedWith("Your unlock time must be in the future")
+})
+
     })
     runEveryTime();
 })
