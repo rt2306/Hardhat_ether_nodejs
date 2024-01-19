@@ -107,6 +107,43 @@
       "artifacts": [
         "console"
       ]
+    },
+    "/home/webexpert/Desktop/Hardhat_ether_nodejs/contracts/MyTest.sol": {
+      "lastModificationDate": 1705655945886,
+      "contentHash": "b15acb1227f2e0582859f881b08be4ce",
+      "sourceName": "contracts/MyTest.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "hardhat/console.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.9"
+      ],
+      "artifacts": [
+        "MyTest"
+      ]
     }
   }
 }
