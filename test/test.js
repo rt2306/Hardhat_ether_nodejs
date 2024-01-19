@@ -41,6 +41,13 @@ describe("MyTest",function(){
             // console.log(myTest,unlockTime);
             expect(await myTest.unlockedTime()).to.equal(unlockTime)
         })
+
+        // check owner
+
+        it("Should be the right owner",async function(){
+            const {myTest,owner} = await loadFixture(runEveryTime);
+            expect(await myTest.owner()).to.equal(owner.address)
+        })
     })
     runEveryTime();
 })
