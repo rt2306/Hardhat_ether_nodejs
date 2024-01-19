@@ -66,5 +66,17 @@ it("Should fail if the unlocked is not in the future",async function(){
 })
 
     })
+
+    describe("Withdrawals",function(){
+        describe("Validation",function () {
+            //Time check for withdarw
+it("Shouldn revert wih the right if called to soon",async function () {
+    const {myTest} = await loadFixture(runEveryTime)
+
+    await expect(myTest.withdraw()).to.be.revertedWith("wait till the period complete")
+    
+})            
+        })
+    })
     runEveryTime();
 })
