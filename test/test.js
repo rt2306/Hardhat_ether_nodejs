@@ -21,10 +21,26 @@ describe("MyTest",function(){
 
 
         const [owner,otherAccount] = await ethers.getSigners();
-        console.log(owner)
-        console.log(otherAccount);
-        
+        // console.log(owner)
+        // console.log(otherAccount);
+        const MyTest = await ethers.getContractFactory("MyTest");
+        const myTest = await MyTest.deploy(unlockTime,{value:lockAmount});
+        // console.log(myTest,'111111111111');
+        // console.log(unlockTime,'2222222222222222222');
+        // console.log(lockAmount,'333333333333');
+        // console.log(owner,'4444444444444');
+        // console.log(otherAccount,'5555555555555555555555555');
+        return {myTest,unlockTime,lockAmount,owner,otherAccount}
         
     }
+
+    describe("Deployment",function(){
+        // check a unlocked time
+        it("Should check unlocked time",async function () {
+            const {myTest,unlockTime} = await loadFixture(runEveryTime)
+            // console.log(myTest,unlockTime);
+            expect(await myTest.unlockedTime()).to.equal(unlockTime)
+        })
+    })
     runEveryTime();
 })
