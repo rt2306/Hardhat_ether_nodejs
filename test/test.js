@@ -1,99 +1,126 @@
 const {
   time,
   loadFixture,
-} = require("@nomicfoundation/hardhat-network-helpers");
-// console.log(time);
-// console.log(loadFixture);
-
+} = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
-// console.log(anyValue);
-
 const { expect } = require("chai");
-// console.log(expect);
 
-const { ethers } = require("hardhat");
-// console.log(ethers);
+describe("Lock", function () {
+  // We define a fixture to reuse the same setup in every test.
+  // We use loadFixture to run this setup once, snapshot that state,
+  // and reset Hardhat Network to that snapshot in every test.
+  async function deployOneYearLockFixture() {
+    const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
+    const ONE_GWEI = 1_000_000_000;
 
-describe("MyTest", function () {
-  async function runEveryTime() {
-    const ONE_YEAR_IN_SECONDS = 356 * 24 * 60 * 60;
-    const ONE_GEWI = 1000000000;
-    const lockAmount = ONE_GEWI;
-    const unlockTime = (await time.latest()) + ONE_YEAR_IN_SECONDS;
-    // console.log(unlockTime);
+    const lockedAmount = ONE_GWEI;
+    const unlockTime = (await time.latest()) + ONE_YEAR_IN_SECS;
 
+    // Contracts are deployed using the first signer/account by default
     const [owner, otherAccount] = await ethers.getSigners();
-    // console.log(owner)
-    // console.log(otherAccount);
-    const MyTest = await ethers.getContractFactory("MyTest");
-    const myTest = await MyTest.deploy(unlockTime, { value: lockAmount });
-    // console.log(myTest,'111111111111');
-    // console.log(unlockTime,'2222222222222222222');
-    // console.log(lockAmount,'333333333333');
-    // console.log(owner,'4444444444444');
-    // console.log(otherAccount,'5555555555555555555555555');
-    return { myTest, unlockTime, lockAmount, owner, otherAccount };
+
+    const Lock = await ethers.getContractFactory("Lock");
+    const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
+
+    return { lock, unlockTime, lockedAmount, owner, otherAccount };
   }
 
   describe("Deployment", function () {
-    // check a unlocked time
-    it("Should check unlocked time", async function () {
-      const { myTest, unlockTime } = await loadFixture(runEveryTime);
-      // console.log(myTest,unlockTime);
-      expect(await myTest.unlockedTime()).to.equal(unlockTime);
+    it("Should set the right unlockTime", async function () {
+      const { lock, unlockTime } = await loadFixture(deployOneYearLockFixture);
+
+      expect(await lock.unlockTime()).to.equal(unlockTime);
     });
 
-    // check owner
+    it("Should set the right owner", async function () {
+      const { lock, owner } = await loadFixture(deployOneYearLockFixture);
 
-    it("Should be the right owner", async function () {
-      const { myTest, owner } = await loadFixture(runEveryTime);
-      expect(await myTest.owner()).to.equal(owner.address);
+      expect(await lock.owner()).to.equal(owner.address);
     });
-    // checl balance
-    it("Should receive and store the funds to MyTest", async function () {
-      const { myTest, lockAmount } = await loadFixture(runEveryTime);
-      // const contractBal = await ethers.provider.getBalance(myTest.target);
-      //  console.log(contractBal,'contractBalcontractBal');
 
-      expect(await ethers.provider.getBalance(myTest.target)).to.equal(
-        lockAmount
+    it("Should receive and store the funds to lock", async function () {
+      const { lock, lockedAmount } = await loadFixture(
+        deployOneYearLockFixture
+      );
+
+      expect(await ethers.provider.getBalance(lock.target)).to.equal(
+        lockedAmount
       );
     });
-    //condition check
-    it("Should fail if the unlocked is not in the future", async function () {
-      const latestTime = await time.latest();
-      // console.log(latestTime / 60 / 60 / 60 / 24);
-      const MyTest = await ethers.getContractFactory("MyTest");
 
-      await expect(MyTest.deploy(latestTime, { value: 1 })).to.be.revertedWith(
-        "Your unlock time must be in the future"
+    it("Should fail if the unlockTime is not in the future", async function () {
+      // We don't use the fixture here because we want a different deployment
+      const latestTime = await time.latest();
+      const Lock = await ethers.getContractFactory("Lock");
+      await expect(Lock.deploy(latestTime, { value: 1 })).to.be.revertedWith(
+        "Unlock time should be in the future"
       );
     });
   });
 
   describe("Withdrawals", function () {
-    describe("Validation", function () {
-      //Time check for withdarw
-      it("Shouldn revert wih the right if called to soon", async function () {
-        const { myTest } = await loadFixture(runEveryTime);
+    describe("Validations", function () {
+      it("Should revert with the right error if called too soon", async function () {
+        const { lock } = await loadFixture(deployOneYearLockFixture);
 
-        await expect(myTest.withdraw()).to.be.revertedWith(
-          "wait till the period complete"
+        await expect(lock.withdraw()).to.be.revertedWith(
+          "You can't withdraw yet"
         );
-      });8
-
-      // right owner
-
-      it("Should revert the message for right owner", async function () {
-        const { myTest ,unlockedTime,otherAccout} = await loadFixture(runEveryTime);
-
-        const newTime = await time.increaseTo(unlockedTime);
-        // console.log(newTime)
-      await time.increaseTo(unlockedTime);
-      await expect(myTest.connect(otherAccout).withdraw()).to.be.revertedWith("You are not owner")
       });
 
+      it("Should revert with the right error if called from another account", async function () {
+        const { lock, unlockTime, otherAccount } = await loadFixture(
+          deployOneYearLockFixture
+        );
+
+        // We can increase the time in Hardhat Network
+        await time.increaseTo(unlockTime);
+
+        // We use lock.connect() to send a transaction from another account
+        await expect(lock.connect(otherAccount).withdraw()).to.be.revertedWith(
+          "You aren't the owner"
+        );
+      });
+
+      it("Shouldn't fail if the unlockTime has arrived and the owner calls it", async function () {
+        const { lock, unlockTime } = await loadFixture(
+          deployOneYearLockFixture
+        );
+
+        // Transactions are sent using the first signer by default
+        await time.increaseTo(unlockTime);
+
+        await expect(lock.withdraw()).not.to.be.reverted;
+      });
+    });
+
+    describe("Events", function () {
+      it("Should emit an event on withdrawals", async function () {
+        const { lock, unlockTime, lockedAmount } = await loadFixture(
+          deployOneYearLockFixture
+        );
+
+        await time.increaseTo(unlockTime);
+
+        await expect(lock.withdraw())
+          .to.emit(lock, "Withdrawal")
+          .withArgs(lockedAmount, anyValue); // We accept any value as `when` arg
+      });
+    });
+
+    describe("Transfers", function () {
+      it("Should transfer the funds to the owner", async function () {
+        const { lock, unlockTime, lockedAmount, owner } = await loadFixture(
+          deployOneYearLockFixture
+        );
+
+        await time.increaseTo(unlockTime);
+
+        await expect(lock.withdraw()).to.changeEtherBalances(
+          [owner, lock],
+          [lockedAmount, -lockedAmount]
+        );
+      });
     });
   });
-  runEveryTime();
 });
