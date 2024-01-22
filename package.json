@@ -5,6 +5,7 @@
     "hardhat": "^2.19.4"
   },
   "dependencies": {
-    "ethers": "^6.10.0"
+    "ethers": "^6.10.0",
+    "web3": "^4.4.0"
   }
 }
